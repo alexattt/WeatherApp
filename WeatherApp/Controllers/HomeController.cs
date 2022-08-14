@@ -22,7 +22,13 @@ namespace WeatherApp.Controllers
         public async Task<IActionResult> Index()
         {
             // to return last update time
-            WeatherData weatherData = _db.WeatherData.OrderByDescending(x => x.CreateTime).First();
+            WeatherData weatherData = _db.WeatherData.OrderByDescending(x => x.CreateTime).FirstOrDefault();
+
+            if (!_db.WeatherData.Any())
+            {
+                // fetching first time if no data is present
+                await FetchApiData();
+            }
 
             return View(weatherData);
         }
@@ -100,7 +106,7 @@ namespace WeatherApp.Controllers
                     CityData city = new CityData();
                     city.City = distinctCity.Key;
 
-                    WeatherData wd = distinctCity.OrderBy(x => x.TemperatureC).First();
+                    WeatherData wd = distinctCity.OrderBy(x => x.TemperatureC).FirstOrDefault();
 
                     datasetsTest.Add(wd.TemperatureC);
                 }
@@ -125,7 +131,7 @@ namespace WeatherApp.Controllers
                     CityData city = new CityData();
                     city.City = distinctCity.Key;
 
-                    WeatherData wd = distinctCity.OrderByDescending(x => x.WindSpeed).First();
+                    WeatherData wd = distinctCity.OrderByDescending(x => x.WindSpeed).FirstOrDefault();
 
                     datasetsTest.Add(wd.WindSpeed);
                 }
@@ -141,7 +147,7 @@ namespace WeatherApp.Controllers
         [HttpPost]
         public async Task<LineChartData> GetLineChartData([FromBody] string type)
         {
-           IQueryable<WeatherData> result = _db.WeatherData.Where(x => x.CreateTime > DateTime.Now.AddMinutes(-120)).OrderBy(x=> x.CreateTime);
+           IQueryable<WeatherData> result = _db.WeatherData.Where(x => x.CreateTime >= DateTime.Now.AddMinutes(-119)).OrderBy(x=> x.CreateTime);
 
            DataTable dt = new DataTable();
            dt.Columns.AddRange(new DataColumn[] { new DataColumn("CreateTime",typeof(string)) });
