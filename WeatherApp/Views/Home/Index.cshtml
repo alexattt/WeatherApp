@@ -1,0 +1,336 @@
+﻿@{
+    ViewData["Title"] = "Weather App";
+}
+
+@model WeatherData
+
+<div class="text-center">
+    <h2>Weather Data</h2>
+    <h6>Updates every minute</h6>
+    
+    <h5>Last update time: @Model.CreateTime</h5>
+
+    <div id="tempChartDiv">
+        <button id="tempChartBtn" class="btn btn-primary" style="margin-top: 40px;">Show 2h Trend</button>
+        <h4 style="margin-top: 10px;">Min Temperature for each Location (All Time)</h4>
+        <canvas id="tempChart" width="300" height="200" style="cursor: pointer;">
+        </canvas>
+    </div>
+    
+    <div id="tempTrendChartDiv">
+        <button id="tempTrendChartBtn" class="btn btn-primary" style="margin-top: 40px;">Show Min Temperature</button>
+        <h4 style="margin-top: 10px;">Temperature Trend (last 2 hours)</h4>
+        <canvas id="tempTrendChart" width="300" height="200" style="cursor: pointer; z-index: 1000;">
+        </canvas>
+    </div>
+    
+    <div id="windChartDiv">
+        <button id="windChartBtn" class="btn btn-primary" style="margin-top: 40px;">Show 2h Trend</button>
+        <h4 style="margin-top: 10px;">Highest Wind Speed at Each Location (All Time)</h4>
+        <canvas id="windChart" width="300" height="200" style="cursor: pointer;">
+        </canvas>
+    </div>
+
+    <div id="windTrendChartDiv">
+        <button id="windTrendChartBtn" class="btn btn-primary" style="margin-top: 40px;">Show Highest Wind Speed</button>
+        <h4 style="margin-top: 10px;">Wind Speed Trend (last 2 hours)</h4>
+        <canvas id="windTrendChart" width="300" height="200" style="cursor: pointer; z-index: 1000;">
+        </canvas>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script type="text/javascript">
+
+        setInterval(function FetchData() {
+            $.ajax({
+                url: '@Url.Action("FetchApiData", "Home")',
+                success: function(response) {
+                    console.log("Successfully fetched data");
+                    window.location.reload();
+                },
+            }).done(function() {
+            });
+        }, 60000);
+    </script>
+
+    <script type="text/javascript">
+        window.onload = function() {
+            var showTempBarChart = localStorage.getItem("ShowTempBarChart");
+            var showWindBarChart = localStorage.getItem("ShowWindBarChart");
+    
+            if (showTempBarChart == "yes") {
+                $('#tempChartDiv').show();
+                $('#tempTrendChartDiv').hide();
+            } else {
+                $('#tempChartDiv').hide();
+                $('#tempTrendChartDiv').show();
+            }
+    
+            if (showWindBarChart == "yes") {
+                $('#windChartDiv').show();
+                $('#windTrendChartDiv').hide();
+            } else {
+                $('#windChartDiv').hide();
+                $('#windTrendChartDiv').show();
+            }
+    
+            console.log(showTempBarChart);
+            console.log(showWindBarChart);
+        };
+    </script>
+
+    @* MIN TEMP BARCHART  *@
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("GetBarChartData", "Home")',
+                data: JSON.stringify("Temperature"),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function(response) {
+                    var data = response.datasets;
+                    var label = response.labels;
+                    var ctx = document.getElementById("tempChart").getContext('2d');
+                    var tempChart = new Chart(ctx,
+                        {
+                            type: 'bar',
+                            data: {
+                                labels: label,
+                                datasets: [
+                                    {
+                                        label: 'Min Temperature',
+                                        data: data,
+                                        backgroundColor: 'green'
+                                    }
+                                ]
+                            },
+                            options: {
+                                title: { display: true, text: 'Min Temperature for each Location (All Time)' },
+                                legend: { display: false },
+                                layout: {
+                                    padding: {
+                                        left: 50,
+                                        right: 50,
+                                        top: 10,
+                                        bottom: 50
+                                    }
+                                }
+                            }
+                        });
+                },
+                error: function(response) {
+                    alert(response.responseText);
+                }
+            });
+        });
+    </script>
+
+    @* MAX WIND SPEED BARCHART  *@
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("GetBarChartData", "Home")',
+                data: JSON.stringify("Wind"),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function(response) {
+                    var data = response.datasets;
+                    var label = response.labels;
+                    var ctx = document.getElementById("windChart").getContext('2d');
+                    var windChart = new Chart(ctx,
+                        {
+                            type: 'bar',
+                            data: {
+                                labels: label,
+                                datasets: [
+                                    {
+                                        label: 'Highest Wind Speed',
+                                        data: data,
+                                        backgroundColor: 'blue'
+                                    }
+                                ]
+                            },
+                            options: {
+                                title: {
+                                     display: true,
+                                     text: 'Highest Wind Speed at Each Location (All Time)',
+                                },
+                                legend: { display: false },
+                                layout: {
+                                    padding: {
+                                        left: 50,
+                                        right: 50,
+                                        top: 10,
+                                        bottom: 50
+                                    }
+                                }
+                            }
+                        });
+                },
+                error: function(response) {
+                    alert(response.responseText);
+                }
+            });
+        });
+    </script>
+    
+    
+    @*TEMPERATURE TRENDLINE *@
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("GetLineChartData", "Home")',
+                data: JSON.stringify("Temperature"),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function(response) {
+                    var label = response.labels;
+                    var datasets = response.datasets;
+
+                    var cityDatasets = [];
+                    var colors = ["rgba(177, 4, 7, 1)", "rgba(137, 134, 179, 1)", "rgba(70, 225, 203, 1)", "rgba(39, 241, 19, 1)", "rgba(74, 127, 79, 1)", 
+                        "rgba(47, 44, 202, 1)", "rgba(210, 53, 3, 1)", "rgba(255, 76, 125, 1)", "rgba(249, 151, 116, 1)", "rgba(157, 7, 50, 1)"
+                    ];
+
+                    for (var i=0; i < response.datasets.length; i++) {
+
+                        var cityDataset = {
+                            label: datasets[i].city,
+                            fillColor: colors[i],
+                            strokeColor: colors[i],
+                            pointColor: colors[i],
+                            borderColor: colors[i],
+                            backgroundColor: colors[i].replace("1)", "0.5)"),
+                            pointStrokeColor: "#fff",
+                            pointHighlightFill: "#fff",
+                            data: datasets[i].dataset
+                        };
+
+                        cityDatasets.push(cityDataset);
+                    }
+
+                    var ctx = document.getElementById("tempTrendChart").getContext('2d');
+                    var windTrendChart = new Chart(ctx,
+                        {
+                            type: 'line',
+                            data: {
+                                labels: label,
+                                datasets: cityDatasets
+                            },
+                            options: {
+                                title: { display: true, text: 'Temperature Trend (last 2 hours)' },
+                                legend: { display: false },
+                                layout: {
+                                    padding: {
+                                        left: 50,
+                                        right: 50,
+                                        top: 10,
+                                        bottom: 50
+                                    }
+                                }
+                            }
+                        });
+                },
+                error: function(response) {
+                    alert(response.responseText);
+                }
+            });
+        });
+    </script>
+    
+    @*WIND SPEED TRENDLINE *@
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("GetLineChartData", "Home")',
+                data: JSON.stringify("Wind"),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function(response) {
+                    var label = response.labels;
+                    var datasets = response.datasets;
+
+                    var cityDatasets = [];
+                    var colors = ["rgba(177, 4, 7, 1)", "rgba(137, 134, 179, 1)", "rgba(70, 225, 203, 1)", "rgba(39, 241, 19, 1)", "rgba(74, 127, 79, 1)", 
+                        "rgba(47, 44, 202, 1)", "rgba(210, 53, 3, 1)", "rgba(255, 76, 125, 1)", "rgba(249, 151, 116, 1)", "rgba(157, 7, 50, 1)"
+                    ];
+
+                    for (var i=0; i < response.datasets.length; i++) {
+
+                        var cityDataset = {
+                            label: datasets[i].city,
+                            fillColor: colors[i],
+                            strokeColor: colors[i],
+                            pointColor: colors[i],
+                            borderColor: colors[i],
+                            backgroundColor: colors[i].replace("1)", "0.5)"),
+                            pointStrokeColor: "#fff",
+                            pointHighlightFill: "#fff",
+                            data: datasets[i].dataset
+                        };
+
+                        cityDatasets.push(cityDataset);
+                    }
+
+                    var ctx = document.getElementById("windTrendChart").getContext('2d');
+                    var windTrendChart = new Chart(ctx,
+                        {
+                            type: 'line',
+                            data: {
+                                labels: label,
+                                datasets: cityDatasets
+                            },
+                            options: {
+                                title: { display: true, text: 'Wind Speed Trend (last 2 hours)' },
+                                legend: { display: false },
+                                layout: {
+                                    padding: {
+                                        left: 50,
+                                        right: 50,
+                                        top: 10,
+                                        bottom: 50
+                                    }
+                                }
+                            }
+                        });
+                },
+                error: function(response) {
+                    alert(response.responseText);
+                }
+            });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $("#tempChartBtn").click(function() {
+            $('#tempChartDiv').hide();
+            $('#tempTrendChartDiv').show();
+            localStorage.setItem("ShowTempBarChart", "no");
+        });
+
+        $("#tempTrendChartBtn").click(function() {
+            $('#tempChartDiv').show();
+            $('#tempTrendChartDiv').hide();
+            localStorage.setItem("ShowTempBarChart", "yes");
+        });
+    
+        $("#windChartBtn").click(function() {
+            $('#windChartDiv').hide();
+            $('#windTrendChartDiv').show();
+            localStorage.setItem("ShowWindBarChart", "no");
+        });
+        $("#windTrendChartBtn").click(function() {
+            $('#windChartDiv').show();
+            $('#windTrendChartDiv').hide();
+            localStorage.setItem("ShowWindBarChart", "yes");
+        });
+    </script>
+}
